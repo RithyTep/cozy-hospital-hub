@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { patientStorage } from '@/lib/localStorage';
+import { patientApi } from '@/lib/jsonBlobApi';
 import { Patient } from '@/types/hms';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -30,29 +30,32 @@ export default function PatientForm() {
     bloodGroup: '',
     allergies: '',
     medicalHistory: '',
+    profileImage: '',
   });
 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isEditing && id) {
-      const patient = patientStorage.getById(id);
-      if (patient) {
-        setFormData({
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          email: patient.email,
-          phone: patient.phone,
-          dateOfBirth: patient.dateOfBirth,
-          gender: patient.gender,
-          address: patient.address,
-          emergencyContact: patient.emergencyContact,
-          emergencyPhone: patient.emergencyPhone,
-          bloodGroup: patient.bloodGroup,
-          allergies: patient.allergies,
-          medicalHistory: patient.medicalHistory,
-        });
-      }
+      patientApi.getById(id).then(patient => {
+        if (patient) {
+          setFormData({
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            email: patient.email,
+            phone: patient.phone,
+            dateOfBirth: patient.dateOfBirth,
+            gender: patient.gender,
+            address: patient.address,
+            emergencyContact: patient.emergencyContact,
+            emergencyPhone: patient.emergencyPhone,
+            bloodGroup: patient.bloodGroup,
+            allergies: patient.allergies,
+            medicalHistory: patient.medicalHistory,
+            profileImage: patient.profileImage || '',
+          });
+        }
+      });
     }
   }, [isEditing, id]);
 
@@ -60,19 +63,19 @@ export default function PatientForm() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isEditing && id) {
-        patientStorage.update(id, formData as Partial<Patient>);
+        await patientApi.update(id, formData as Partial<Patient>);
         toast({
           title: 'Patient updated',
           description: `${formData.firstName} ${formData.lastName} has been updated successfully.`,
         });
       } else {
-        patientStorage.create(formData as Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>);
+        await patientApi.create(formData as Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>);
         toast({
           title: 'Patient added',
           description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
@@ -184,6 +187,16 @@ export default function PatientForm() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="profileImage">Profile Image (URL)</Label>
+                <Input
+                  id="profileImage"
+                  value={formData.profileImage}
+                  onChange={(e) => handleInputChange('profileImage', e.target.value)}
+                  placeholder="Enter image URL"
+                />
               </div>
 
               <div>

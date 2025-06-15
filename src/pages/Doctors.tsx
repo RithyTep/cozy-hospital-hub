@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { doctorStorage } from '@/lib/localStorage';
+import { doctorApi } from '@/lib/jsonBlobApi';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Doctor } from '@/types/hms';
 import { Plus, Search, Edit, Trash2, Phone, Mail, GraduationCap, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -29,14 +30,14 @@ export default function Doctors() {
     setFilteredDoctors(filtered);
   }, [doctors, searchTerm]);
 
-  const loadDoctors = () => {
-    const allDoctors = doctorStorage.getAll();
+  const loadDoctors = async () => {
+    const allDoctors = await doctorApi.getAll();
     setDoctors(allDoctors);
   };
 
-  const handleDeleteDoctor = (id: string, name: string) => {
+  const handleDeleteDoctor = async (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to delete Dr. ${name}?`)) {
-      const success = doctorStorage.delete(id);
+      const success = await doctorApi.delete(id);
       if (success) {
         loadDoctors();
         toast({
@@ -86,13 +87,24 @@ export default function Doctors() {
             <Card key={doctor.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">
-                      Dr. {doctor.firstName} {doctor.lastName}
-                    </CardTitle>
-                    <p className="text-sm text-healthcare-600 font-medium">
-                      {doctor.specialization}
-                    </p>
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={doctor.profileImage} 
+                        alt={`Dr. ${doctor.firstName} ${doctor.lastName}`} 
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {doctor.firstName.charAt(0)}{doctor.lastName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-lg">
+                        Dr. {doctor.firstName} {doctor.lastName}
+                      </CardTitle>
+                      <p className="text-sm text-healthcare-600 font-medium">
+                        {doctor.specialization}
+                      </p>
+                    </div>
                   </div>
                   <Badge variant="outline" className="text-xs">
                     {doctor.experience}y exp

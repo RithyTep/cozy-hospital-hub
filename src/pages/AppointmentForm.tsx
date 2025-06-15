@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { appointmentStorage, patientStorage, doctorStorage } from '@/lib/localStorage';
+import { appointmentApi, patientApi, doctorApi } from '@/lib/jsonBlobApi';
 import { Patient, Doctor } from '@/types/hms';
 import { ArrowLeft, Save, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -29,15 +29,22 @@ export default function AppointmentForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setPatients(patientStorage.getAll());
-    setDoctors(doctorStorage.getAll());
+    const loadData = async () => {
+      const [patientsData, doctorsData] = await Promise.all([
+        patientApi.getAll(),
+        doctorApi.getAll()
+      ]);
+      setPatients(patientsData);
+      setDoctors(doctorsData);
+    };
+    loadData();
   }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -62,7 +69,7 @@ export default function AppointmentForm() {
         return;
       }
 
-      appointmentStorage.create({
+      await appointmentApi.create({
         patientId: formData.patientId,
         doctorId: formData.doctorId,
         date: formData.date,

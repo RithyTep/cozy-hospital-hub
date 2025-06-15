@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { appointmentStorage, patientStorage, doctorStorage } from '@/lib/localStorage';
+import { appointmentApi, patientApi, doctorApi } from '@/lib/jsonBlobApi';
 import { Appointment, Patient, Doctor } from '@/types/hms';
 import { Plus, Search, Calendar, Clock, User, UserCheck, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -58,14 +58,19 @@ export default function Appointments() {
     setFilteredAppointments(filtered);
   }, [appointments, patients, doctors, searchTerm, statusFilter]);
 
-  const loadData = () => {
-    setAppointments(appointmentStorage.getAll());
-    setPatients(patientStorage.getAll());
-    setDoctors(doctorStorage.getAll());
+  const loadData = async () => {
+    const [appointmentsData, patientsData, doctorsData] = await Promise.all([
+      appointmentApi.getAll(),
+      patientApi.getAll(),
+      doctorApi.getAll()
+    ]);
+    setAppointments(appointmentsData);
+    setPatients(patientsData);
+    setDoctors(doctorsData);
   };
 
-  const handleStatusUpdate = (id: string, newStatus: 'scheduled' | 'completed' | 'cancelled') => {
-    const success = appointmentStorage.update(id, { status: newStatus });
+  const handleStatusUpdate = async (id: string, newStatus: 'scheduled' | 'completed' | 'cancelled') => {
+    const success = await appointmentApi.update(id, { status: newStatus });
     if (success) {
       loadData();
       toast({
@@ -75,9 +80,9 @@ export default function Appointments() {
     }
   };
 
-  const handleDeleteAppointment = (id: string, patientName: string) => {
+  const handleDeleteAppointment = async (id: string, patientName: string) => {
     if (window.confirm(`Are you sure you want to delete the appointment for ${patientName}?`)) {
-      const success = appointmentStorage.delete(id);
+      const success = await appointmentApi.delete(id);
       if (success) {
         loadData();
         toast({

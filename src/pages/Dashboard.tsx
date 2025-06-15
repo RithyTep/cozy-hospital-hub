@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { patientStorage, doctorStorage, appointmentStorage } from '@/lib/localStorage';
+import { patientApi, doctorApi, appointmentApi } from '@/lib/jsonBlobApi';
 import { Users, UserCheck, Calendar, TrendingUp, Plus } from 'lucide-react';
 import { Patient, Doctor, Appointment } from '@/types/hms';
 
@@ -17,9 +17,12 @@ export default function Dashboard() {
   const [todaysAppointments, setTodaysAppointments] = useState<(Appointment & { patientName: string; doctorName: string })[]>([]);
 
   useEffect(() => {
-    const patients = patientStorage.getAll();
-    const doctors = doctorStorage.getAll();
-    const appointments = appointmentStorage.getAll();
+    const loadData = async () => {
+      const [patients, doctors, appointments] = await Promise.all([
+        patientApi.getAll(),
+        doctorApi.getAll(),
+        appointmentApi.getAll()
+      ]);
     
     const today = new Date().toISOString().split('T')[0];
     const todayAppointments = appointments.filter(apt => apt.date === today);
@@ -48,6 +51,8 @@ export default function Dashboard() {
       };
     });
     setTodaysAppointments(appointmentsWithNames);
+    };
+    loadData();
   }, []);
 
   const statCards = [

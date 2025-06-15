@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { patientStorage } from '@/lib/localStorage';
+import { patientApi } from '@/lib/jsonBlobApi';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Patient } from '@/types/hms';
 import { Plus, Search, Edit, Trash2, Phone, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -28,14 +29,14 @@ export default function Patients() {
     setFilteredPatients(filtered);
   }, [patients, searchTerm]);
 
-  const loadPatients = () => {
-    const allPatients = patientStorage.getAll();
+  const loadPatients = async () => {
+    const allPatients = await patientApi.getAll();
     setPatients(allPatients);
   };
 
-  const handleDeletePatient = (id: string, name: string) => {
+  const handleDeletePatient = async (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const success = patientStorage.delete(id);
+      const success = await patientApi.delete(id);
       if (success) {
         loadPatients();
         toast({
@@ -96,13 +97,24 @@ export default function Patients() {
             <Card key={patient.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {patient.firstName} {patient.lastName}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {getAgeFromDateOfBirth(patient.dateOfBirth)} years old • {patient.gender}
-                    </p>
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={patient.profileImage} 
+                        alt={`${patient.firstName} ${patient.lastName}`} 
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-lg">
+                        {patient.firstName} {patient.lastName}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {getAgeFromDateOfBirth(patient.dateOfBirth)} years old • {patient.gender}
+                      </p>
+                    </div>
                   </div>
                   <Badge variant={patient.bloodGroup ? 'default' : 'secondary'}>
                     {patient.bloodGroup || 'N/A'}

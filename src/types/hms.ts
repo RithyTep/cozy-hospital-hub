@@ -12,6 +12,7 @@ export interface Patient {
   bloodGroup: string;
   allergies: string;
   medicalHistory: string;
+  profileImage?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +28,7 @@ export interface Doctor {
   experience: number;
   consultationFee: number;
   availability: string[];
+  profileImage?: string;
   createdAt: string;
   updatedAt: string;
 }

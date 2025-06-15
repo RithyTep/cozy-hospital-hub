@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { patientStorage, doctorStorage, appointmentStorage } from '@/lib/localStorage';
+import { patientApi, doctorApi, appointmentApi } from '@/lib/jsonBlobApi';
 import { FileText, Search, Plus, Eye, Printer } from 'lucide-react';
 import { Patient, Doctor, Appointment } from '@/types/hms';
 
@@ -15,9 +15,17 @@ export default function MedicalRecords() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
 
   useEffect(() => {
-    setAppointments(appointmentStorage.getAll());
-    setPatients(patientStorage.getAll());
-    setDoctors(doctorStorage.getAll());
+    const loadData = async () => {
+      const [appointmentsData, patientsData, doctorsData] = await Promise.all([
+        appointmentApi.getAll(),
+        patientApi.getAll(),
+        doctorApi.getAll()
+      ]);
+      setAppointments(appointmentsData);
+      setPatients(patientsData);
+      setDoctors(doctorsData);
+    };
+    loadData();
   }, []);
 
   const getPatientName = (patientId: string) => {

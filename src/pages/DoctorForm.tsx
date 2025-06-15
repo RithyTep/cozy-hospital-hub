@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { doctorStorage } from '@/lib/localStorage';
+import { doctorApi } from '@/lib/jsonBlobApi';
 import { Doctor } from '@/types/hms';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,7 @@ export default function DoctorForm() {
     experience: 0,
     consultationFee: 0,
     availability: [] as string[],
+    profileImage: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -54,20 +55,22 @@ export default function DoctorForm() {
 
   useEffect(() => {
     if (isEditing && id) {
-      const doctor = doctorStorage.getById(id);
-      if (doctor) {
-        setFormData({
-          firstName: doctor.firstName,
-          lastName: doctor.lastName,
-          email: doctor.email,
-          phone: doctor.phone,
-          specialization: doctor.specialization,
-          qualification: doctor.qualification,
-          experience: doctor.experience,
-          consultationFee: doctor.consultationFee,
-          availability: doctor.availability,
-        });
-      }
+      doctorApi.getById(id).then(doctor => {
+        if (doctor) {
+          setFormData({
+            firstName: doctor.firstName,
+            lastName: doctor.lastName,
+            email: doctor.email,
+            phone: doctor.phone,
+            specialization: doctor.specialization,
+            qualification: doctor.qualification,
+            experience: doctor.experience,
+            consultationFee: doctor.consultationFee,
+            availability: doctor.availability,
+            profileImage: doctor.profileImage || '',
+          });
+        }
+      });
     }
   }, [isEditing, id]);
 
@@ -84,19 +87,19 @@ export default function DoctorForm() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isEditing && id) {
-        doctorStorage.update(id, formData as Partial<Doctor>);
+        await doctorApi.update(id, formData as Partial<Doctor>);
         toast({
           title: 'Doctor updated',
           description: `Dr. ${formData.firstName} ${formData.lastName} has been updated successfully.`,
         });
       } else {
-        doctorStorage.create(formData as Omit<Doctor, 'id' | 'createdAt' | 'updatedAt'>);
+        await doctorApi.create(formData as Omit<Doctor, 'id' | 'createdAt' | 'updatedAt'>);
         toast({
           title: 'Doctor added',
           description: `Dr. ${formData.firstName} ${formData.lastName} has been added to the system.`,
@@ -196,6 +199,16 @@ export default function DoctorForm() {
                     <option key={spec} value={spec} />
                   ))}
                 </datalist>
+              </div>
+
+              <div>
+                <Label htmlFor="profileImage">Profile Image (URL)</Label>
+                <Input
+                  id="profileImage"
+                  value={formData.profileImage}
+                  onChange={(e) => handleInputChange('profileImage', e.target.value)}
+                  placeholder="Enter image URL"
+                />
               </div>
 
               <div>
