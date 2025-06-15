@@ -1,5 +1,20 @@
 import { Patient, Doctor, Appointment, MedicalRecord } from '@/types/hms';
 
+interface AdminAuth {
+  id: string;
+  username: string;
+  password: string;
+  createdAt: string;
+}
+
+interface AdminSession {
+  id: string;
+  username: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
 const API_BASE = 'https://jsonblob.com/api/jsonBlob';
 
 // Storage for blob IDs - in production, these would be stored in a more persistent way
@@ -8,6 +23,7 @@ const BLOB_IDS = {
   DOCTORS: localStorage.getItem('doctors_blob_id') || '',
   APPOINTMENTS: localStorage.getItem('appointments_blob_id') || '',
   MEDICAL_RECORDS: localStorage.getItem('medical_records_blob_id') || '',
+  ADMIN_AUTH: localStorage.getItem('admin_auth_blob_id') || '',
 };
 
 // Initialize blob IDs if they don't exist
@@ -251,5 +267,82 @@ export const medicalRecordApi = {
     const filtered = records.filter(record => record.id !== id);
     if (filtered.length === records.length) return false;
     return await saveToApi(BLOB_IDS.MEDICAL_RECORDS, filtered);
+  },
+};
+
+// Admin Authentication functions
+export const adminAuthApi = {
+  // Initialize default admin if not exists
+  initialize: async (): Promise<void> => {
+    const auths = await getFromApi<AdminAuth>(BLOB_IDS.ADMIN_AUTH);
+    if (auths.length === 0) {
+      const defaultAdmin: AdminAuth = {
+        id: 'admin_1',
+        username: 'AdminRith',
+        password: '5569',
+        createdAt: new Date().toISOString(),
+      };
+      await saveToApi(BLOB_IDS.ADMIN_AUTH, [defaultAdmin]);
+    }
+  },
+
+  // Login function
+  login: async (username: string, password: string): Promise<string | null> => {
+    await adminAuthApi.initialize();
+    const auths = await getFromApi<AdminAuth>(BLOB_IDS.ADMIN_AUTH);
+    const admin = auths.find(auth => auth.username === username && auth.password === password);
+    
+    if (admin) {
+      // Create session token
+      const token = `hms_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
+      
+      const session: AdminSession = {
+        id: Date.now().toString(),
+        username: admin.username,
+        token,
+        expiresAt: expiresAt.toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+
+      // Store session in localStorage for quick access
+      localStorage.setItem('admin_session', JSON.stringify(session));
+      return token;
+    }
+    return null;
+  },
+
+  // Validate session
+  validateSession: async (): Promise<boolean> => {
+    const sessionStr = localStorage.getItem('admin_session');
+    if (!sessionStr) return false;
+    
+    try {
+      const session: AdminSession = JSON.parse(sessionStr);
+      const now = new Date();
+      const expiresAt = new Date(session.expiresAt);
+      
+      return now < expiresAt;
+    } catch {
+      return false;
+    }
+  },
+
+  // Logout
+  logout: async (): Promise<void> => {
+    localStorage.removeItem('admin_session');
+  },
+
+  // Get current session
+  getCurrentSession: (): AdminSession | null => {
+    const sessionStr = localStorage.getItem('admin_session');
+    if (!sessionStr) return null;
+    
+    try {
+      return JSON.parse(sessionStr);
+    } catch {
+      return null;
+    }
   },
 };

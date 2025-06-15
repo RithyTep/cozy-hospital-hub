@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { adminAuthApi } from '@/lib/jsonBlobApi';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (password: string) => boolean;
-  logout: () => void;
+  currentUser: string | null;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,39 +24,39 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user has valid token for today
-    const token = localStorage.getItem('auth_token');
-    const tokenDate = localStorage.getItem('auth_date');
-    const today = new Date().toDateString();
-    
-    if (token && tokenDate === today) {
-      setIsAuthenticated(true);
-    }
+    // Check if user has valid session
+    const checkAuth = async () => {
+      const isValid = await adminAuthApi.validateSession();
+      if (isValid) {
+        const session = adminAuthApi.getCurrentSession();
+        setIsAuthenticated(true);
+        setCurrentUser(session?.username || null);
+      }
+    };
+    checkAuth();
   }, []);
 
-  const login = (password: string): boolean => {
-    if (password === '5569') {
-      const today = new Date().toDateString();
-      const token = `hms_${Date.now()}`;
-      
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('auth_date', today);
+  const login = async (username: string, password: string): Promise<boolean> => {
+    const token = await adminAuthApi.login(username, password);
+    if (token) {
       setIsAuthenticated(true);
+      setCurrentUser(username);
       return true;
     }
     return false;
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_date');
+  const logout = async (): Promise<void> => {
+    await adminAuthApi.logout();
     setIsAuthenticated(false);
+    setCurrentUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
