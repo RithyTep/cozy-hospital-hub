@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, 
   Users, 
@@ -9,7 +10,8 @@ import {
   FileText, 
   Menu,
   X,
-  Activity
+  Activity,
+  LogOut
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -19,6 +21,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { logout } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -105,9 +108,12 @@ export default function Layout({ children }: LayoutProps) {
             </Button>
             
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">
-                Welcome to Hospital Management System
+              <span className="text-xs text-muted-foreground">
+                HMS Dashboard
               </span>
+              <Button variant="ghost" size="sm" onClick={logout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>

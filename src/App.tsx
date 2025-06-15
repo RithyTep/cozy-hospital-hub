@@ -11,7 +11,10 @@ import Doctors from "./pages/Doctors";
 import DoctorForm from "./pages/DoctorForm";
 import Appointments from "./pages/Appointments";
 import AppointmentForm from "./pages/AppointmentForm";
+import MedicalRecords from "./pages/MedicalRecords";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { initializeSampleData } from "./lib/sampleData";
 
 const queryClient = new QueryClient();
@@ -19,26 +22,33 @@ const queryClient = new QueryClient();
 // Initialize sample data on app start
 initializeSampleData();
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <>{children}</> : <Login />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/patients" element={<Layout><Patients /></Layout>} />
-          <Route path="/patients/new" element={<Layout><PatientForm /></Layout>} />
-          <Route path="/patients/:id/edit" element={<Layout><PatientForm /></Layout>} />
-          <Route path="/doctors" element={<Layout><Doctors /></Layout>} />
-          <Route path="/doctors/new" element={<Layout><DoctorForm /></Layout>} />
-          <Route path="/doctors/:id/edit" element={<Layout><DoctorForm /></Layout>} />
-          <Route path="/appointments" element={<Layout><Appointments /></Layout>} />
-          <Route path="/appointments/new" element={<Layout><AppointmentForm /></Layout>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+            <Route path="/patients" element={<ProtectedRoute><Layout><Patients /></Layout></ProtectedRoute>} />
+            <Route path="/patients/new" element={<ProtectedRoute><Layout><PatientForm /></Layout></ProtectedRoute>} />
+            <Route path="/patients/:id/edit" element={<ProtectedRoute><Layout><PatientForm /></Layout></ProtectedRoute>} />
+            <Route path="/doctors" element={<ProtectedRoute><Layout><Doctors /></Layout></ProtectedRoute>} />
+            <Route path="/doctors/new" element={<ProtectedRoute><Layout><DoctorForm /></Layout></ProtectedRoute>} />
+            <Route path="/doctors/:id/edit" element={<ProtectedRoute><Layout><DoctorForm /></Layout></ProtectedRoute>} />
+            <Route path="/appointments" element={<ProtectedRoute><Layout><Appointments /></Layout></ProtectedRoute>} />
+            <Route path="/appointments/new" element={<ProtectedRoute><Layout><AppointmentForm /></Layout></ProtectedRoute>} />
+            <Route path="/records" element={<ProtectedRoute><Layout><MedicalRecords /></Layout></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
